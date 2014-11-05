@@ -14,7 +14,7 @@ object Main extends App {
   private def commandLoop(): Unit = {
     Console.readLine() match {
       case QuitCommand         => return
-      case TrackCommand(query) => stream ! query
+      case BeginCommand => stream ! BeginStreaming
       case _                   => println("WTF??!!")
     }
 
@@ -29,6 +29,6 @@ object Main extends App {
 object Commands {
 
   val QuitCommand   = "quit"
-  val TrackCommand = "track (.*)".r
+  val BeginCommand = "begin"
 
 }

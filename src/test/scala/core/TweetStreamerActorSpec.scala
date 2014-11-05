@@ -18,7 +18,7 @@ class TweetStreamerActorSpec extends TestKit(ActorSystem()) with SpecificationLi
 
     "Should unmarshal one tweet" in {
       val twitterApi = TwitterApi(port)
-      tweetStream ! "typesafe"
+      tweetStream ! BeginStreaming
 
       val tweet = expectMsgType[Tweet]
       tweet.text mustEqual "Aggressive Ponytail #freebandnames"

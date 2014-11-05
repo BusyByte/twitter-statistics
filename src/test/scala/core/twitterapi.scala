@@ -15,7 +15,7 @@ class TwitterApi private(system: ActorSystem, port: Int, body: String) {
     def receive: Receive = {
       case _: Http.Connected =>
         sender ! Http.Register(self)
-      case HttpRequest(HttpMethods.POST, _, _, _, _) =>
+      case HttpRequest(HttpMethods.GET, _, _, _, _) =>
         sender ! ChunkedResponseStart(HttpResponse(StatusCodes.OK))
         sender ! MessageChunk(body = body)
         sender ! ChunkedMessageEnd()

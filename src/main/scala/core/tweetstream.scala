@@ -69,7 +69,7 @@ trait TweetMarshaller {
 }
 
 object TweetStreamerActor {
-  val twitterUri = Uri("https://stream.twitter.com/1.1/statuses/filter.json")
+  val twitterUri = Uri("https://stream.twitter.com/1.1/statuses/sample.json")
 }
 
 class TweetStreamerActor(uri: Uri, processor: ActorRef) extends Actor with TweetMarshaller {
@@ -77,9 +77,8 @@ class TweetStreamerActor(uri: Uri, processor: ActorRef) extends Actor with Tweet
   val io = IO(Http)(context.system)
 
   def receive: Receive = {
-    case query: String =>
-      val body = HttpEntity(ContentType(MediaTypes.`application/x-www-form-urlencoded`), s"track=$query")
-      val rq = HttpRequest(HttpMethods.POST, uri = uri, entity = body) ~> authorize
+    case BeginStreaming =>
+      val rq = HttpRequest(HttpMethods.GET, uri = uri) ~> authorize
       sendTo(io).withResponsesReceivedBy(self)(rq)
     case ChunkedResponseStart(_) =>
     case MessageChunk(entity, _) => TweetUnmarshaller(entity).fold(_ => (), processor !)
