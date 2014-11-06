@@ -7,7 +7,7 @@ import spray.client.pipelining._
 import akka.actor.{ActorRef, Actor}
 import spray.http.HttpRequest
 import scala.Some
-import domain.{Place, User, Tweet}
+import domain._
 import scala.io.Source
 import scala.util.Try
 import spray.can.Http
@@ -50,6 +50,18 @@ trait TweetMarshaller {
       case _ => Left(MalformedContent("bad tweet"))
     }
 
+    def mkHashTags(entities: Option[JsValue]): List[HashTag] = entities match {
+      case Some(entitiesObj: JsObject) => entitiesObj.fields.get("hashtags") match {
+        case Some(theArray: JsArray) if theArray.elements.nonEmpty => theArray.elements.map(value => mkHashTag(value.asJsObject))
+        case _ => Nil
+      }
+      case _ => Nil
+    }
+
+    def mkHashTag(hashTag : JsObject): HashTag =  hashTag.fields.get("text") match {
+      case Some(JsString(text)) => HashTag(text)
+    }
+
     def apply(entity: HttpEntity): Deserialized[Tweet] = {
       Try {
         val json = JsonParser(entity.asString).asJsObject
@@ -57,7 +69,7 @@ trait TweetMarshaller {
           case (Some(JsString(id)), Some(JsString(text)), Some(place), Some(user: JsObject)) =>
             val x = mkUser(user).fold(x => Left(x), { user =>
               mkPlace(place).fold(x => Left(x), { place =>
-                Right(Tweet(id, user, text, place))
+                Right(Tweet(id, user, text, place, Nil, mkHashTags(json.fields.get("entities")), Nil))
               })
             })
             x
