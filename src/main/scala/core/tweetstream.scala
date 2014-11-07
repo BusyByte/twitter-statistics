@@ -62,6 +62,20 @@ trait TweetMarshaller {
       case Some(JsString(text)) => HashTag(text)
     }
 
+    def mkUrls(entities: Option[JsValue]): List[Url] = entities match {
+      case Some(entitiesObj: JsObject) => entitiesObj.fields.get("urls") match {
+        case Some(theArray: JsArray) if theArray.elements.nonEmpty => theArray.elements.map(value => mkUrl(value.asJsObject))
+        case _ => Nil
+      }
+      case _ => Nil
+    }
+
+    def mkUrl(url : JsObject): Url =  url.fields.get("expanded_url") match {
+      case Some(JsString(expanded_url)) => Url(expanded_url)
+    }
+    
+    
+
     def apply(entity: HttpEntity): Deserialized[Tweet] = {
       Try {
         val json = JsonParser(entity.asString).asJsObject
@@ -69,7 +83,7 @@ trait TweetMarshaller {
           case (Some(JsString(id)), Some(JsString(text)), Some(place), Some(user: JsObject)) =>
             val x = mkUser(user).fold(x => Left(x), { user =>
               mkPlace(place).fold(x => Left(x), { place =>
-                Right(Tweet(id, user, text, place, Nil, mkHashTags(json.fields.get("entities")), Nil))
+                Right(Tweet(id, user, text, place, mkUrls(json.fields.get("entities")), mkHashTags(json.fields.get("entities")), Nil))
               })
             })
             x
