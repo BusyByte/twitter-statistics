@@ -3,7 +3,7 @@ package core
 import akka.actor.ActorSystem
 import org.specs2.mutable.SpecificationLike
 import akka.testkit.{TestActorRef, TestKit, ImplicitSender}
-import domain.{Url, HashTag, Tweet}
+import domain.{Photo, Url, HashTag, Tweet}
 import spray.http.Uri
 
 class TweetStreamerActorSpec extends TestKit(ActorSystem()) with SpecificationLike with ImplicitSender {
@@ -27,6 +27,7 @@ class TweetStreamerActorSpec extends TestKit(ActorSystem()) with SpecificationLi
       tweet.place mustEqual None
       tweet.hashtags mustEqual List(HashTag("freebandnames"))
       tweet.urls mustEqual List(Url("https://blog.twitter.com/2013/rich-photo-experience-now-in-embedded-tweets-3"))
+      tweet.photos mustEqual List(Photo("pic.twitter.com/bAJE6Vom"))
       twitterApi.stop()
       success
     }

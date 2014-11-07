@@ -70,10 +70,21 @@ trait TweetMarshaller {
       case _ => Nil
     }
 
-    def mkUrl(url : JsObject): Url =  url.fields.get("expanded_url") match {
+    def mkUrl(url: JsObject): Url =  url.fields.get("expanded_url") match {
       case Some(JsString(expanded_url)) => Url(expanded_url)
     }
-    
+
+    def mkPhotos(entities: Option[JsValue]): List[Photo] = entities match {
+      case Some(entitiesObj: JsObject) => entitiesObj.fields.get("media") match {
+        case Some(theArray: JsArray) if theArray.elements.nonEmpty => theArray.elements.map(value => mkPhoto(value.asJsObject))
+        case _ => Nil
+      }
+      case _ => Nil
+    }
+
+    def mkPhoto(photo: JsObject): Photo =  photo.fields.get("display_url") match {
+      case Some(JsString(display_url)) => Photo(display_url)
+    }
     
 
     def apply(entity: HttpEntity): Deserialized[Tweet] = {
@@ -83,7 +94,8 @@ trait TweetMarshaller {
           case (Some(JsString(id)), Some(JsString(text)), Some(place), Some(user: JsObject)) =>
             val x = mkUser(user).fold(x => Left(x), { user =>
               mkPlace(place).fold(x => Left(x), { place =>
-                Right(Tweet(id, user, text, place, mkUrls(json.fields.get("entities")), mkHashTags(json.fields.get("entities")), Nil))
+                val entities: Option[JsValue] = json.fields.get("entities")
+                Right(Tweet(id, user, text, place, mkUrls(entities), mkHashTags(entities), mkPhotos(entities)))
               })
             })
             x
