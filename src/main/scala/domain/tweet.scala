@@ -10,10 +10,10 @@ case class Tweet(id: String, user: User, text: String, place: Option[Place], url
 
 case class Url(expandedUrl: String)
 
-case class HashTag(text: String)
+case class HashTag(text: HashTagText)
 
 case class Photo(displayUrl: String)
 
-case class Emoji(name: String, text: Option[String])
+case class Emoji(name: EmojiName, text: Option[String])
 
 case class Emojis(emojis: List[Emoji])
