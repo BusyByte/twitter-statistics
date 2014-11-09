@@ -5,6 +5,7 @@ import java.net.URL
 import akka.actor.{Props, Actor}
 import domain.{HashTagText, EmojiName, Emojis, Tweet}
 import scala.collection.mutable
+import scala.concurrent.duration._
 
 /**
  * Created by Shawn on 11/8/2014.
@@ -16,17 +17,31 @@ class TweetAnalysisActor extends Actor {
   var numberOfUrlTweets: Int = 0
   var numberOfPhotoTweets: Int = 0
 
-
   val emojiProcessor = context.system.actorOf(Props[EmojiActor])
 
   val emojiCounts = mutable.Map[EmojiName, Int]().withDefaultValue(0)
   val hashTagCounts = mutable.Map[HashTagText, Int]().withDefaultValue(0)
   val domainCounts = mutable.Map[String, Int]().withDefaultValue(0)
+  val topCount = 10
 
+  case object PrintReport
+
+  context.system.scheduler.schedule(10 seconds, 10 seconds, self, PrintReport)(context.dispatcher)
+
+  def formatCountMap(theMap: mutable.Map[String, Int]): String = {
+    theMap.toList.sortBy(-_._2).take(topCount).map(pair => s"""{\"${pair._1}\" : \"${pair._2}\"}""").mkString("[", ",", "]")
+  }
+
+  def topEmojisInTweets: String = formatCountMap(emojiCounts)
+  
+  def topHashTagsInTweets: String = formatCountMap(hashTagCounts)
+
+  def topDomainsInTweets: String = formatCountMap(domainCounts)
 
   override def receive: Receive = {
     case tweet: Tweet => updateTweetStats(tweet)
     case emojis: Emojis => updateEmojiStats(emojis)
+    case PrintReport => printReport()
   }
 
   def updateTweetStats(tweet: Tweet): Unit = {
@@ -37,22 +52,23 @@ class TweetAnalysisActor extends Actor {
     updatePhotoCounts(tweet)
   }
 
+  def percentEmojis = numberOfEmojiTweets * 100 / numberOfTweets
+  def percentUrls = numberOfUrlTweets * 100 / numberOfTweets
+  def percentPhotos = numberOfPhotoTweets * 100 / numberOfTweets
+
   def printReport(): Unit = {
-    //Total number of tweets received
-
-    //Average tweets per hour/minute/second
-
-    //Top emojis in tweets
-
-    //Percent of tweets that contains emojis
-
-    //Top hashtags
-
-    //Percent of tweets that contain a url
-
-    //Percent of tweets that contain a photo url (pic.twitter.com or instagram)
-
-    //Top domains of urls in tweets
+    if(numberOfTweets > 0) {
+      println( s"""
+         |total number of tweets received: $numberOfTweets
+         |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
+         |top $topCount emojis: $topEmojisInTweets
+         |tweets w/ an emoji: ${percentEmojis}%
+         |top $topCount hashtags: $topHashTagsInTweets
+         |tweets w/ a url: ${percentUrls}%
+         |tweets w/ photo url: ${percentPhotos}%
+         |top $topCount domains of urls in tweets: $topDomainsInTweets
+       """.stripMargin)
+    }
   }
 
   def updatePhotoCounts(tweet: Tweet): Unit = {
@@ -88,7 +104,7 @@ class TweetAnalysisActor extends Actor {
   def updateHashTagCounts(tweet: Tweet): Unit = {
     tweet.hashtags.foreach {
       tag =>
-        val hashTagText = tag.text
+        val hashTagText = tag.text.toLowerCase
         val count = hashTagCounts(hashTagText)
         hashTagCounts.update(hashTagText, count + 1)
     }
@@ -113,6 +129,16 @@ class TweetAnalysisActor extends Actor {
   def incrementEmojiTweetCount(): Unit = {
     numberOfEmojiTweets = numberOfEmojiTweets + 1
   }
+
+  def tweetsPerSecond: Long = {
+    val elapsedMillis = System.currentTimeMillis() - startupTime
+    val elapsedSeconds = elapsedMillis / 1000
+    numberOfTweets / elapsedSeconds
+  }
+
+  def tweetsPerMinute: Long = tweetsPerSecond * 60
+
+  def tweetsPerHour: Long = tweetsPerMinute * 60
 
 
 }
