@@ -16,4 +16,3 @@ case class Photo(displayUrl: String)
 
 case class Emoji(name: EmojiName, text: Option[String])
 
-case class Emojis(emojis: List[Emoji])
