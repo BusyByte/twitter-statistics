@@ -30,31 +30,41 @@ class ReportActor extends Actor {
   }
 
   def printReport(): Unit = {
-    if(tweetCount.isDefined && topEmojis.isDefined && emojiCount.isDefined && topHashTags.isDefined && urlCount.isDefined && photoCount.isDefined && topDomains.isDefined) {
-      println( s"""
-         |total number of tweets received: ${tweetCount.get.count}
-         |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
-         |top $topCount emojis: ${topEmojis.get.summaryText}
-         |tweets w/ an emoji: ${percentEmojis}%
-         |top $topCount hashtags: ${topHashTags.get.summaryText}
-         |tweets w/ a url: ${percentUrls}%
-         |tweets w/ photo url: ${percentPhotos}%
-         |top $topCount domains of urls in tweets: ${topDomains.get.summaryText}
-       """.stripMargin)
-    }
+    println( s"""
+       |total number of tweets received: ${tweetCount.map(_.count).getOrElse(0)}
+       |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
+       |top $topCount emojis: ${topEmojis.map(_.summaryText).getOrElse("")}
+       |tweets w/ an emoji: ${percentEmojis}%
+       |top $topCount hashtags: ${topHashTags.map(_.summaryText).getOrElse("")}
+       |tweets w/ a url: ${percentUrls}%
+       |tweets w/ photo url: ${percentPhotos}%
+       |top $topCount domains of urls in tweets: ${topDomains.map(_.summaryText).getOrElse("")}
+     """.stripMargin)
   }
 
   def tweetsPerSecond: Long = {
     val elapsedSeconds = elapsedTime / 1000
-    tweetCount.get.count / elapsedSeconds
+    tweetCount.map(_.count / elapsedSeconds).getOrElse(0)
   }
 
-  def elapsedTime: Long = (System.currentTimeMillis() - startTime)
+  def elapsedTime: Long = System.currentTimeMillis() - startTime
 
   def tweetsPerMinute: Long = tweetsPerSecond * 60
   def tweetsPerHour: Long = tweetsPerMinute * 60
 
-  def percentEmojis = emojiCount.get.count * 100 / tweetCount.get.count
-  def percentUrls = urlCount.get.count * 100 / tweetCount.get.count
-  def percentPhotos = photoCount.get.count * 100 / tweetCount.get.count
+  def percentEmojis = {
+    tweetCount.map { numTweets =>
+      emojiCount.map(_.count * 100 / numTweets.count).getOrElse(0)
+    }.getOrElse(0)
+  }
+  def percentUrls = {
+    tweetCount.map { numTweets =>
+      urlCount.map(_.count * 100 / numTweets.count).getOrElse(0)
+    }.getOrElse(0)
+  }
+  def percentPhotos = {
+    tweetCount.map { numTweets =>
+      photoCount.map(_.count * 100 / numTweets.count).getOrElse(0)
+    }.getOrElse(0)
+  }
 }
