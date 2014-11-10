@@ -9,5 +9,6 @@ object Main extends App {
   val tweetAnalyzer = system.actorOf(Props[TweetAnalysisActor])
   val stream = system.actorOf(Props(new TweetStreamerActor(TweetStreamerActor.twitterUri, tweetAnalyzer) with OAuthTwitterAuthorization))
 
+  println("Please wait, it will take 5 seconds for the first report.")
   stream ! BeginStreaming
 }
