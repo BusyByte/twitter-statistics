@@ -7,8 +7,8 @@ import akka.actor.Actor
  */
 class ReportActor extends Actor {
 
+  val startTime: Long = System.currentTimeMillis()
   var tweetCount: Option[TweetCount] = None
-  var elapsedTime: Option[ElapsedTime] = None
   var topEmojis: Option[TopEmojis] = None
   var emojiCount: Option[EmojiCount] = None
   var topHashTags: Option[TopHashTags] = None
@@ -16,18 +16,10 @@ class ReportActor extends Actor {
   var photoCount: Option[PhotoCount] = None
   var topDomains: Option[TopDomains] = None
 
-  context.system.eventStream.subscribe(self, classOf[TweetCount])
-  context.system.eventStream.subscribe(self, classOf[ElapsedTime])
-  context.system.eventStream.subscribe(self, classOf[TopEmojis])
-  context.system.eventStream.subscribe(self, classOf[EmojiCount])
-  context.system.eventStream.subscribe(self, classOf[TopHashTags])
-  context.system.eventStream.subscribe(self, classOf[UrlCount])
-  context.system.eventStream.subscribe(self, classOf[PhotoCount])
-  context.system.eventStream.subscribe(self, classOf[TopDomains])
+  context.system.eventStream.subscribe(self, classOf[ReportEvent])
 
   override def receive: Receive = {
     case tc: TweetCount => tweetCount = Some(tc)
-    case et: ElapsedTime => elapsedTime = Some(et)
     case te: TopEmojis => topEmojis = Some(te)
     case ec: EmojiCount => emojiCount = Some(ec)
     case tht: TopHashTags => topHashTags = Some(tht)
@@ -38,7 +30,7 @@ class ReportActor extends Actor {
   }
 
   def printReport(): Unit = {
-    if(tweetCount.isDefined && elapsedTime.isDefined && topEmojis.isDefined && emojiCount.isDefined && topHashTags.isDefined && urlCount.isDefined && photoCount.isDefined && topDomains.isDefined) {
+    if(tweetCount.isDefined && topEmojis.isDefined && emojiCount.isDefined && topHashTags.isDefined && urlCount.isDefined && photoCount.isDefined && topDomains.isDefined) {
       println( s"""
          |total number of tweets received: ${tweetCount.get.count}
          |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
@@ -53,9 +45,11 @@ class ReportActor extends Actor {
   }
 
   def tweetsPerSecond: Long = {
-    val elapsedSeconds = elapsedTime.get.time / 1000
+    val elapsedSeconds = elapsedTime / 1000
     tweetCount.get.count / elapsedSeconds
   }
+
+  def elapsedTime: Long = (System.currentTimeMillis() - startTime)
 
   def tweetsPerMinute: Long = tweetsPerSecond * 60
   def tweetsPerHour: Long = tweetsPerMinute * 60

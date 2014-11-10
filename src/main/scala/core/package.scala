@@ -7,14 +7,14 @@ package object core {
 
   case object PrintReport
 
-  case class TweetCount(count: Int)
-  case class ElapsedTime(time: Long)
-  case class EmojiCount(count: Int)
-  case class TopEmojis(summaryText: String)
-  case class TopHashTags(summaryText: String)
-  case class UrlCount(count: Int)
-  case class PhotoCount(count: Int)
-  case class TopDomains(summaryText: String)
+  sealed trait ReportEvent
+  case class TweetCount(count: Int) extends ReportEvent
+  case class EmojiCount(count: Int) extends ReportEvent
+  case class TopEmojis(summaryText: String) extends ReportEvent
+  case class TopHashTags(summaryText: String) extends ReportEvent
+  case class UrlCount(count: Int) extends ReportEvent
+  case class PhotoCount(count: Int) extends ReportEvent
+  case class TopDomains(summaryText: String) extends ReportEvent
 
   val topCount = 10
 
