@@ -6,12 +6,12 @@ import spray.json._
 import spray.client.pipelining._
 import akka.actor.{ActorRef, Actor}
 import spray.http.HttpRequest
-import scala.Some
 import domain._
 import scala.io.Source
 import scala.util.Try
 import spray.can.Http
 import akka.io.IO
+import scala.concurrent.duration._
 
 trait TwitterAuthorization {
   def authorize: HttpRequest => HttpRequest
@@ -120,6 +120,6 @@ class TweetStreamerActor(uri: Uri, processor: ActorRef) extends Actor with Tweet
       sendTo(io).withResponsesReceivedBy(self)(rq)
     case ChunkedResponseStart(_) =>
     case MessageChunk(entity, _) => TweetUnmarshaller(entity).fold(_ => (), processor !)
-    case _ =>
+    case it: Any => println(s"Unknown type: $it with class ${it.getClass.getName}")
   }
 }
