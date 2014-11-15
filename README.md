@@ -33,3 +33,6 @@ Note: make sure you update your computer's clock otherwise you could occasionall
 
 ##Running
 Having added the file above, you can see the application "in action", by run ``sbt run`` in an ANSI terminal.
+
+##Citation
+This project was created based on the Typesafe Activator "Akka IO with Spray Client" Template (https://github.com/eigengo/activator-spray-twitter)

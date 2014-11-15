@@ -15,8 +15,6 @@ libraryDependencies ++= Seq(
   "io.spray"                % "spray-client"          % "1.2.0",
   "io.spray"                % "spray-routing"         % "1.2.0",
   "io.spray"               %% "spray-json"            % "1.2.5",
-  "org.eigengo.monitor"     % "agent-akka"            % "0.2-SNAPSHOT",
-  "org.eigengo.monitor"     % "output-statsd"         % "0.2-SNAPSHOT",
   "org.specs2"             %% "specs2"                % "2.2.2"        % "test",
   "io.spray"                % "spray-testkit"         % "1.2.0"        % "test",
   "com.typesafe.akka"      %% "akka-testkit"          % "2.2.3"        % "test"
@@ -28,13 +26,11 @@ scalacOptions ++= Seq(
   "-Xlint",
   "-Ywarn-dead-code",
   "-language:_",
-  "-target:jvm-1.7",
+  "-target:jvm-1.8",
   "-encoding", "UTF-8"
 )
 
 parallelExecution in Test := false
-
-javaOptions in run += "-javaagent:" + System.getProperty("user.home") + "/.ivy2/cache/org.aspectj/aspectjweaver/jars/aspectjweaver-1.7.3.jar"
 
 fork in run := true
 
