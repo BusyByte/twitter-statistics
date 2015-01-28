@@ -8,7 +8,7 @@ case class Place(country: String, name: String) {
 
 case class Tweet(id: String, user: User, text: String, place: Option[Place], urls: List[Url], hashtags: List[HashTag], photos: List[Photo])
 
-case class Url(expandedUrl: String)
+case class Url(expandedUrl: String, displayUrl: String)
 
 case class HashTag(text: HashTagText)
 

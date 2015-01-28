@@ -15,15 +15,18 @@ class PhotoActor extends Actor {
   }
 
   def updatePhotoCounts(tweet: Tweet): Unit = {
-    val containsPhotoLink = tweet.photos.exists {
-      photo =>
-        photo.displayUrl.toLowerCase.contains("pic.twitter.com") || photo.displayUrl.toLowerCase.contains("instagram")
-    }
+    val allUrls = tweet.photos.map(_.displayUrl) ++ tweet.urls.map(_.displayUrl)
+    val anyWithLink = allUrls.exists(containsPhotoLink)
 
-    if(containsPhotoLink) {
+    if(anyWithLink) {
       numberOfPhotoTweets = numberOfPhotoTweets + 1
       context.system.eventStream.publish(PhotoCount(numberOfPhotoTweets))
     }
+  }
+
+  private def containsPhotoLink(url: String): Boolean = {
+    val lowerCaseUrl: String = url.toLowerCase
+    lowerCaseUrl.contains("pic.twitter.com") || lowerCaseUrl.contains("instagram")
   }
 
 }

@@ -70,8 +70,8 @@ trait TweetMarshaller {
       case _ => Nil
     }
 
-    def mkUrl(url: JsObject): Url =  url.fields.get("expanded_url") match {
-      case Some(JsString(expanded_url)) => Url(expanded_url)
+    def mkUrl(url: JsObject): Url =  (url.fields.get("expanded_url"), url.fields.get("display_url")) match {
+      case (Some(JsString(expanded_url)), Some(JsString(display_url))) => Url(expanded_url, display_url)
     }
 
     def mkPhotos(entities: Option[JsValue]): List[Photo] = entities match {
@@ -89,7 +89,9 @@ trait TweetMarshaller {
 
     def apply(entity: HttpEntity): Deserialized[Tweet] = {
       Try {
-        val json = JsonParser(entity.asString).asJsObject
+        val entityString: String = entity.asString
+        val json = JsonParser(entityString).asJsObject
+
         (json.fields.get("id_str"), json.fields.get("text"), json.fields.get("place"), json.fields.get("user")) match {
           case (Some(JsString(id)), Some(JsString(text)), Some(place), Some(user: JsObject)) =>
             val x = mkUser(user).fold(x => Left(x), { user =>
