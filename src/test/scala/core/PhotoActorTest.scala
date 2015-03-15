@@ -84,4 +84,11 @@ class PhotoActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
     expectMsg(MSG_TIMEOUT, PhotoCount(3))
     expectMsg(MSG_TIMEOUT, PhotoCount(4))
   }
+
+  test("No photo or url with photo is not counted") {
+    val photoActor = TestActorRef(Props[PhotoActor])
+    photoActor ! PhotoTweet()
+
+    expectNoMsg(MSG_TIMEOUT)
+  }
 }
