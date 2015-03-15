@@ -17,7 +17,8 @@ libraryDependencies ++= Seq(
   "io.spray"               %% "spray-json"            % "1.2.5",
   "org.specs2"             %% "specs2"                % "2.2.2"        % "test",
   "io.spray"                % "spray-testkit"         % "1.2.0"        % "test",
-  "com.typesafe.akka"      %% "akka-testkit"          % "2.2.3"        % "test"
+  "com.typesafe.akka"      %% "akka-testkit"          % "2.2.3"        % "test",
+  "org.scalatest"           % "scalatest_2.10"        % "2.2.4"        % "test"
 )
 
 scalacOptions ++= Seq(
