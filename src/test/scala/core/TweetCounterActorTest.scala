@@ -25,7 +25,7 @@ object TestTweet {
 /**
  * Created by Shawn on 3/14/2015.
  */
-class TweetCounterTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteLike with ImplicitSender with BeforeAndAfter {
+class TweetCounterActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteLike with ImplicitSender with BeforeAndAfter {
   import ActorTestingSupport._
 
   before {

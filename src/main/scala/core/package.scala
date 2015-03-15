@@ -6,6 +6,7 @@ import scala.collection.mutable
 package object core {
 
   case object PrintReport
+  case class Report(report: String)
 
   sealed trait ReportEvent
   case class TweetCount(count: Int) extends ReportEvent

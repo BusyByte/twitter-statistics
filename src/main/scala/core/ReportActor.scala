@@ -30,16 +30,18 @@ class ReportActor extends Actor {
   }
 
   def printReport(): Unit = {
-    println( s"""
-       |total number of tweets received: ${tweetCount.map(_.count).getOrElse(0)}
-       |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
-       |top $topCount emojis: ${topEmojis.map(_.summaryText).getOrElse("")}
-       |tweets w/ an emoji: ${percentEmojis}%
-       |top $topCount hashtags: ${topHashTags.map(_.summaryText).getOrElse("")}
-       |tweets w/ a url: ${percentUrls}%
-       |tweets w/ photo url: ${percentPhotos}%
-       |top $topCount domains of urls in tweets: ${topDomains.map(_.summaryText).getOrElse("")}
-     """.stripMargin)
+    val reportText: String = s"""
+        |total number of tweets received: ${tweetCount.map(_.count).getOrElse(0)}
+        |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
+        |top $topCount emojis: ${topEmojis.map(_.summaryText).getOrElse("")}
+        |tweets w/ an emoji: ${percentEmojis}%
+        |top $topCount hashtags: ${topHashTags.map(_.summaryText).getOrElse("")}
+        |tweets w/ a url: ${percentUrls}%
+        |tweets w/ photo url: ${percentPhotos}%
+        |top $topCount domains of urls in tweets: ${topDomains.map(_.summaryText).getOrElse("")}
+     """.stripMargin
+    println(reportText)
+    context.system.eventStream.publish(Report(reportText))
   }
 
   def tweetsPerSecond: Long = {
