@@ -14,13 +14,14 @@ class EmojiLoader {
 
   def loadEmojis(json: String): List[Emoji] = {
     val jsonValue = JsonParser(json)
-    val emojisWithText: List[Emoji] = (jsonValue match {
-      case JsArray(elements) if elements.nonEmpty => elements.map(jsValue => mkEmoji(jsValue.asJsObject))
-    }).filter(_.text.isDefined)
+    val emojisWithText: List[Emoji] = jsonValue match {
+        case JsArray(Nil) => Nil
+        case JsArray(elements) => elements.flatMap(jsValue => mkEmoji(jsValue.asJsObject))
+      }
     emojisWithText
   }
 
-  private def mkEmoji(emoji: JsObject): Emoji = {
+  private def mkEmoji(emoji: JsObject): Option[Emoji] = {
     val nameString: String = emoji.fields.get("name").get match {
       case JsString(name) => name
     }
@@ -28,6 +29,9 @@ class EmojiLoader {
       case JsString(text) => text
     }
 
-    Emoji(nameString, maybeTextString)
+    maybeTextString.map {
+      text =>
+        Emoji(nameString, text)
+    }
   }
 }

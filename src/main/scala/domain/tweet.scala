@@ -14,5 +14,5 @@ case class HashTag(text: HashTagText)
 
 case class Photo(displayUrl: String)
 
-case class Emoji(name: EmojiName, text: Option[String])
+case class Emoji(name: EmojiName, text: String)
 

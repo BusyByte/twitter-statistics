@@ -6,6 +6,7 @@ import akka.actor.Actor
 import domain._
 import spray.json.{JsString, JsObject, JsArray, JsonParser}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /**
@@ -21,25 +22,46 @@ class EmojiActor extends Actor {
     case tweet: Tweet => updateEmojiStats(tweet)
   }
 
-  def findEmojis(tweet: Tweet): List[Emoji] = {
-    emojis.filter(emoji => tweet.text.contains(emoji.text.get))
-  }
+  def findEmojis(tweet: Tweet): List[(Emoji,Int)] =
+    emojis.map {
+      e =>
+        (e, countEmojiInText(e,tweet))
+    }.filter(_._2 > 0)
+
 
   def updateEmojiStats(tweet: Tweet) : Unit = {
     val emojis = findEmojis(tweet)
     if(emojis.nonEmpty) {
       incrementEmojiTweetCount()
       emojis.foreach {
-        emoji =>
-          val emojiName = emoji.name
+        e =>
+          val emojiName = e._1.name
+          val emojiCount = e._2
           val count = emojiCounts(emojiName)
-          emojiCounts.update(emojiName, count + 1)
+          emojiCounts.update(emojiName, count + emojiCount)
       }
 
       context.system.eventStream.publish(TopEmojis(topEmojisInTweets))
       context.system.eventStream.publish(EmojiCount(numberOfEmojiTweets))
     }
   }
+
+  @tailrec
+  private def countEmojiInText(emoji: Emoji, tweet: Tweet, count:Int = 0, startingIndex:Int = 0): Int = {
+    val tweetText: String = tweet.text
+    if(startingIndex >= tweetText.length) {
+      count
+    } else {
+      val emojiText: String = emoji.text
+      val nextIndex = tweetText.indexOf(emojiText, startingIndex)
+      if(nextIndex == -1) {
+        count
+      } else {
+        countEmojiInText(emoji, tweet, count + 1, nextIndex + emojiText.length)
+      }
+    }
+  }
+
 
   def incrementEmojiTweetCount(): Unit = {
     numberOfEmojiTweets = numberOfEmojiTweets + 1

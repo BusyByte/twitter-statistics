@@ -26,6 +26,7 @@ object EmojiTweet {
  * Created by Shawn on 3/14/2015.
  */
 class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteLike with ImplicitSender with BeforeAndAfter {
+  import ActorTestingSupport._
 
   before {
     system.eventStream.subscribe(self, classOf[TopEmojis])
@@ -37,13 +38,12 @@ class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
     system.eventStream.unsubscribe(self, classOf[EmojiCount])
   }
 
-
   test("Single Emoji gets counted once") {
     val emojiActor = TestActorRef(Props[EmojiActor])
     emojiActor ! EmojiTweet(":p")
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
-    expectMsg(1 second, EmojiCount(1))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(1))
   }
 
   test("Single emoji gets counted once") {
@@ -51,17 +51,17 @@ class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
 
     emojiActor ! EmojiTweet(":p")
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
-    expectMsg(1 second, EmojiCount(1))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(1))
   }
 
-  test("Emoji double occurrence gets counted as one tweet") {
+  test("Emoji double occurrence gets counted as one tweet, emoji itself is counted twice") {
     val emojiActor = TestActorRef(Props[EmojiActor])
 
     emojiActor ! EmojiTweet(":p :p")
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
-    expectMsg(1 second, EmojiCount(1))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"2\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(1))
   }
 
   test("Multiple Emoji counted") {
@@ -69,8 +69,8 @@ class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
 
     emojiActor ! EmojiTweet(":p :)")
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"},{\"SMILING FACE WITH OPEN MOUTH AND SMILING EYES\" : \"1\"},{\"SMILING FACE WITH OPEN MOUTH\" : \"1\"}]"))
-    expectMsg(1 second, EmojiCount(1))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"},{\"SMILING FACE WITH OPEN MOUTH AND SMILING EYES\" : \"1\"},{\"SMILING FACE WITH OPEN MOUTH\" : \"1\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(1))
   }
 
   test("No emoji doesn't get counted") {
@@ -78,7 +78,7 @@ class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
 
     emojiActor ! EmojiTweet("foo bar")
 
-    expectNoMsg(1 second)
+    expectNoMsg(MSG_TIMEOUT)
   }
 
   test("Single Emoji with multiple tweets gets counted twice") {
@@ -86,11 +86,11 @@ class EmojiActorTest extends TestKit(ActorSystem()) with org.scalatest.FunSuiteL
     emojiActor ! EmojiTweet(":p")
     emojiActor ! EmojiTweet(":p")
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
-    expectMsg(1 second, EmojiCount(1))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"1\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(1))
 
-    expectMsg(1 second, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"2\"}]"))
-    expectMsg(1 second, EmojiCount(2))
+    expectMsg(MSG_TIMEOUT, TopEmojis("[{\"FACE WITH STUCK-OUT TONGUE\" : \"2\"}]"))
+    expectMsg(MSG_TIMEOUT, EmojiCount(2))
   }
 
 }
