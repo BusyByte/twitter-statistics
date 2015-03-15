@@ -30,23 +30,28 @@ class ReportActor extends Actor {
   }
 
   def printReport(): Unit = {
-    val reportText: String = s"""
-        |total number of tweets received: ${tweetCount.map(_.count).getOrElse(0)}
-        |average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond
-        |top $topCount emojis: ${topEmojis.map(_.summaryText).getOrElse("")}
-        |tweets w/ an emoji: ${percentEmojis}%
-        |top $topCount hashtags: ${topHashTags.map(_.summaryText).getOrElse("")}
-        |tweets w/ a url: ${percentUrls}%
-        |tweets w/ photo url: ${percentPhotos}%
-        |top $topCount domains of urls in tweets: ${topDomains.map(_.summaryText).getOrElse("")}
-     """.stripMargin
-    println(reportText)
-    context.system.eventStream.publish(Report(reportText))
+    val report = Report(
+      totalTweets = s"total number of tweets received: ${tweetCount.map(_.count).getOrElse(0)}",
+      tweetsInTimeframe = s"average tweets per hour/minute/second: $tweetsPerHour/$tweetsPerMinute/$tweetsPerSecond",
+      topEmojis = s"top $topCount emojis: ${topEmojis.map(_.summaryText).getOrElse("")}",
+      tweetsWithEmoji = s"tweets w/ an emoji: ${percentEmojis}%",
+      topHashTags = s"top $topCount hashtags: ${topHashTags.map(_.summaryText).getOrElse("")}",
+      tweetsWithUrl = s"tweets w/ a url: ${percentUrls}%",
+      tweetsWithPhotoUrl = s"tweets w/ photo url: ${percentPhotos}%",
+      topDomains = s"top $topCount domains of urls in tweets: ${topDomains.map(_.summaryText).getOrElse("")}"
+    )
+
+    println(report.toString)
+    context.system.eventStream.publish(report)
   }
 
   def tweetsPerSecond: Long = {
-    val elapsedSeconds = elapsedTime / 1000
-    tweetCount.map(_.count / elapsedSeconds).getOrElse(0)
+    val elapsedSeconds: Long = elapsedTime / 1000
+
+    (tweetCount, elapsedSeconds) match {
+      case (Some(tCount), elapSecs) if elapSecs > 0 => tCount.count / elapSecs
+      case _ => 0l
+    }
   }
 
   def elapsedTime: Long = System.currentTimeMillis() - startTime

@@ -6,7 +6,26 @@ import scala.collection.mutable
 package object core {
 
   case object PrintReport
-  case class Report(report: String)
+  case class Report(
+                     totalTweets: String,
+                     tweetsInTimeframe: String,
+                     topEmojis: String,
+                     tweetsWithEmoji: String,
+                     topHashTags: String,
+                     tweetsWithUrl: String,
+                     tweetsWithPhotoUrl: String,
+                     topDomains: String) {
+    override def toString: String = s"""
+        |$totalTweets
+        |$tweetsInTimeframe
+        |$topEmojis
+        |$tweetsWithEmoji
+        |$topHashTags
+        |$tweetsWithUrl
+        |$tweetsWithPhotoUrl
+        |$topDomains
+        """.stripMargin
+  }
 
   sealed trait ReportEvent
   case class TweetCount(count: Int) extends ReportEvent
