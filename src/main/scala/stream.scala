@@ -1,25 +1,22 @@
 package net.nomadicalien.twitter.stream
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model._
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl.Source
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.util.ByteString
+import cats.implicits._
 import com.hunorkovacs.koauth.domain.KoauthRequest
 import com.hunorkovacs.koauth.service.consumer.DefaultConsumerService
 import io.circe._
 import io.circe.generic.semiauto._
 import net.nomadicalien.twitter.models._
-import cats.implicits._
 
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
 object TwitterStream {
   implicit val actorSystem = ActorSystem()
@@ -27,10 +24,9 @@ object TwitterStream {
     materializerSettings =
       ActorMaterializerSettings(actorSystem)
         .withSupervisionStrategy(Supervision.resumingDecider: Supervision.Decider)
-        .withDebugLogging(true)
   )
   implicit val httpExt = Http()
-  val consumer = new DefaultConsumerService(actorSystem.dispatcher)
+  val consumer = new DefaultConsumerService(scala.concurrent.ExecutionContext.global)
 
   def getEnvVar(envVarName: String) = scala.sys.env.get(envVarName)
     .fold[Either[ApplicationError, String]](Left(MissingConfigError(s"$envVarName environment variable is missing")))(Right.apply)
@@ -51,12 +47,9 @@ object TwitterStream {
       consumerSecret <- maybeConsumerSecret
       accessToken <- maybeAccessToken
       accessTokenSecret <- maybeAccessTokenSecret
-      _ = println("getting auth header")
       auth = getAuthorizationHeader(consumerKey, consumerSecret, accessToken, accessTokenSecret)
-      _ = println("got auth header")
       headers = auth.map(createHeaders)
       request = headers.map(createRequest)
-      _ = println("executing request")
       response = request.flatMap(httpExt.singleRequest(_))
     } yield response.map(handleResponse)
   }
@@ -81,10 +74,9 @@ object TwitterStream {
   }
 
   def handleResponse(response: HttpResponse): Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], Any]] = {
-    println("handling response")
     response.status match {
       case StatusCodes.OK =>
-        Right(toTweatStream(response.entity.dataBytes))
+        Right(toTweatStream(response.entity.withoutSizeLimit().dataBytes))
 
       case status =>
         Left(HttpError(s"Received a bad status code: $status"))
@@ -103,7 +95,7 @@ object TwitterStream {
       consumerSecret,
       accessToken,
       accessTokenSecret
-    ).map(_.header)
+    ).map(_.header)//TODO: don't want this to be future, why is generating header expensive?
 
   def createHeaders(authHeaderValue: String): immutable.Seq[HttpHeader] = {
     immutable.Seq(

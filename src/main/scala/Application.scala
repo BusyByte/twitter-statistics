@@ -17,12 +17,12 @@ object Application extends App {
       tweetSourceF.foreach {
         case Left(error) => println("Error: " + error.message)
         case Right(twitterSource) =>
-          twitterSource.runForeach {
+          val runForEachF = twitterSource.runForeach {
             case Left(error) => println("Error: " + error.message)
             case Right(Tweet(text)) => println(s"Tweet")
             case Right(DeletedTweet(Delete(Status(id)))) => println(s"Deleted tweet")
           }
-
+          Await.result(runForEachF, Duration.Inf)
       }
       Await.result(tweetSourceF, Duration.Inf)
   }
