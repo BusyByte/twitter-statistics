@@ -95,7 +95,7 @@ object TwitterStream {
       consumerSecret,
       accessToken,
       accessTokenSecret
-    ).map(_.header)//TODO: don't want this to be future, why is generating header expensive?
+    ).map(_.header)
 
   def createHeaders(authHeaderValue: String): immutable.Seq[HttpHeader] = {
     immutable.Seq(
