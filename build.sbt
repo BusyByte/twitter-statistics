@@ -1,40 +1,14 @@
-name := """activator-spray-twitter"""
+name := "twitter-statistics"
 
-version := "1.0"
+version := "2.0"
 
-scalaVersion := "2.10.2"
-
-resolvers += "spray repo" at "http://repo.spray.io"
-
-resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka"      %% "akka-actor"            % "2.2.3",
-  "com.typesafe.akka"      %% "akka-slf4j"            % "2.2.3",
-  "io.spray"                % "spray-can"             % "1.2.0",
-  "io.spray"                % "spray-client"          % "1.2.0",
-  "io.spray"                % "spray-routing"         % "1.2.0",
-  "io.spray"               %% "spray-json"            % "1.2.5",
-  "org.specs2"             %% "specs2"                % "2.2.2"        % "test",
-  "io.spray"                % "spray-testkit"         % "1.2.0"        % "test",
-  "com.typesafe.akka"      %% "akka-testkit"          % "2.2.3"        % "test",
-  "org.scalatest"           % "scalatest_2.10"        % "2.2.4"        % "test"
+  "com.typesafe.akka" %% "akka-http" % "10.0.1",
+  "io.circe" %% "circe-core" % "0.5.0",
+  "io.circe" %% "circe-generic" % "0.5.0",
+  "io.circe" %% "circe-parser" % "0.5.0",
+  "de.knutwalker" %% "akka-stream-circe" % "3.1.0",
+  "com.hunorkovacs" %% "koauth" % "1.1.0"
 )
-
-scalacOptions ++= Seq(
-  "-unchecked",
-  "-deprecation",
-  "-Xlint",
-  "-Ywarn-dead-code",
-  "-language:_",
-  "-target:jvm-1.7",
-  "-encoding", "UTF-8"
-)
-
-parallelExecution in Test := false
-
-fork in run := true
-
-connectInput in run := true
-
-outputStrategy in run := Some(StdoutOutput)
