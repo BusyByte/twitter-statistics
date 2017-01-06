@@ -1,8 +1,11 @@
 package net.nomadicalien.twitter
 
+import net.nomadicalien.twitter.models.{Delete, DeletedTweet, Status, Tweet}
 import net.nomadicalien.twitter.stream.TwitterStream
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 object Application extends App {
   import TwitterStream.materializer
@@ -11,12 +14,17 @@ object Application extends App {
   TwitterStream.twitterStream match {
     case Left(error) => println("Error: " + error.message)
     case Right(tweetSourceF) =>
-      tweetSourceF.foreach { tweetSource =>
-        tweetSource.async.runForeach {tweet =>
-          println("Tweet: " + tweet.text)
-        }
+      tweetSourceF.foreach {
+        case Left(error) => println("Error: " + error.message)
+        case Right(twitterSource) =>
+          twitterSource.runForeach {
+            case Left(error) => println("Error: " + error.message)
+            case Right(Tweet(text)) => println(s"Tweet")
+            case Right(DeletedTweet(Delete(Status(id)))) => println(s"Deleted tweet")
+          }
 
       }
+      Await.result(tweetSourceF, Duration.Inf)
   }
 
   println("finished")

@@ -1,5 +1,6 @@
 package net.nomadicalien.twitter.stream
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers._
@@ -7,11 +8,12 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.hunorkovacs.koauth.domain.KoauthRequest
 import com.hunorkovacs.koauth.service.consumer.DefaultConsumerService
 import io.circe._
 import io.circe.generic.semiauto._
-import net.nomadicalien.twitter.models.{ApplicationError, MissingConfigError, Tweet}
+import net.nomadicalien.twitter.models._
 import cats.implicits._
 
 import scala.collection.immutable
@@ -41,9 +43,9 @@ object TwitterStream {
 
   def maybeAccessTokenSecret = getEnvVar("TWITTER_ACCESS_TOKEN_SECRET")
 
-  val statsSampleUrl = "https://stream.twitter.com/1.1/statuses/sample.json"
+  val statsSampleUrl = "https://stream.twitter.com/1.1/statuses/sample.json?stall_warnings=true"
 
-  def twitterStream: Either[ApplicationError, Future[Source[Tweet, Any]]] = {
+  def twitterStream: Either[ApplicationError, Future[Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], Any]]]] = {
     for {
       consumerKey <- maybeConsumerKey
       consumerSecret <- maybeConsumerSecret
@@ -59,20 +61,33 @@ object TwitterStream {
     } yield response.map(handleResponse)
   }
 
+  import io.circe.parser.decode
+  implicit val tweetDecoder: Decoder[Tweet] = deriveDecoder[Tweet]
+  implicit val statusDecoder: Decoder[Status] = deriveDecoder[Status]
+  implicit val deleteDecoder: Decoder[Delete] = deriveDecoder[Delete]
+  implicit val deletedTweetDecoder: Decoder[DeletedTweet] = deriveDecoder[DeletedTweet]
 
-  implicit val fooDecoder: Decoder[Tweet] = deriveDecoder[Tweet]
+  def decodeJson(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
+    decode[Tweet](json)
+      .orElse(decode[DeletedTweet](json))
+      .leftMap(_ => TweetParseError(s"Error parsing json:\n$json\n" ))
+      .toEither
+  }
 
-  def handleResponse(response: HttpResponse): Source[Tweet, Any] = {
+  def toTweatStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
+    dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
+      .filter(_.contains("\r\n"))
+      .map(decodeJson)
+  }
+
+  def handleResponse(response: HttpResponse): Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], Any]] = {
     println("handling response")
     response.status match {
-      case StatusCodes.OK => response.entity.dataBytes.via(de.knutwalker.akka.stream.support.CirceStreamSupport.decode[Tweet])
-      case status =>
-        response.entity.dataBytes.runFold("")(_ + _).onComplete {
-          case Success(s) => println(s"Received non-normal status code: $status, response $s")
-          case Failure(f) => println(s"Received non-normal status code: $status, response ${f.getMessage}")
-        }
+      case StatusCodes.OK =>
+        Right(toTweatStream(response.entity.dataBytes))
 
-        Source.empty[Tweet]
+      case status =>
+        Left(HttpError(s"Received a bad status code: $status"))
     }
   }
 
