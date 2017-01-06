@@ -9,6 +9,5 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.5.0",
   "io.circe" %% "circe-generic" % "0.5.0",
   "io.circe" %% "circe-parser" % "0.5.0",
-  "de.knutwalker" %% "akka-stream-circe" % "3.1.0",
   "com.hunorkovacs" %% "koauth" % "1.1.0"
 )
