@@ -83,7 +83,7 @@ object TwitterStream {
 
   def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
-      .filter(_.contains("\r\n"))
+      .filter(_.contains("\r\n")).async
       .map(decodeJson)
   }
 
