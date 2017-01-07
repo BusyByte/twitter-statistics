@@ -11,22 +11,12 @@ object Application extends App {
   import TwitterStream.materializer
 
   println("starting")
-  TwitterStream.twitterStream match {
-    case Left(error) => println("Error: " + error.message)
-    case Right(tweetSourceF) =>
-      tweetSourceF.foreach {
-        case Left(error) => println("Error: " + error.message)
-        case Right(twitterSource) =>
-          val runForEachF = twitterSource.runForeach {
-            case Left(error) => println("Error: " + error.message)
-            case Right(Tweet(text)) => println(s"Tweet")
-            case Right(DeletedTweet(Delete(Status(id)))) => println(s"Deleted tweet")
-          }
-          Await.result(runForEachF, Duration.Inf)
-      }
-      Await.result(tweetSourceF, Duration.Inf)
+  val streamFinishedF = TwitterStream.twitterStream.runForeach {
+    case Left(error) => System.err.println("Error: " + error.message)
+    case Right(Tweet(text)) => println(s"Tweet $text")
+    case Right(DeletedTweet(Delete(Status(id)))) => println(s"Deleted tweet $id")
   }
-
-  println("finished")
-
+  println("awaiting stream termination")
+  Await.result(streamFinishedF, Duration.Inf)
+  System.err.println("stream terminated")
 }

@@ -1,10 +1,11 @@
 package net.nomadicalien.twitter.stream
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.util.ByteString
 import cats.implicits._
@@ -16,7 +17,7 @@ import net.nomadicalien.twitter.models._
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 object TwitterStream {
   implicit val actorSystem = ActorSystem()
@@ -41,17 +42,25 @@ object TwitterStream {
 
   val statsSampleUrl = "https://stream.twitter.com/1.1/statuses/sample.json?stall_warnings=true"
 
-  def twitterStream: Either[ApplicationError, Future[Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], Any]]]] = {
-    for {
+  val requestFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+    httpExt.outgoingConnectionHttps("stream.twitter.com")
+
+  def twitterStream: Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed] = {
+    val maybeStream: Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed]] = for {
       consumerKey <- maybeConsumerKey
       consumerSecret <- maybeConsumerSecret
       accessToken <- maybeAccessToken
       accessTokenSecret <- maybeAccessTokenSecret
       auth = getAuthorizationHeader(consumerKey, consumerSecret, accessToken, accessTokenSecret)
-      headers = auth.map(createHeaders)
-      request = headers.map(createRequest)
-      response = request.flatMap(httpExt.singleRequest(_))
-    } yield response.map(handleResponse)
+      headers = createHeaders(auth)
+      request = createRequest(headers)
+      responseSource: Source[HttpResponse, NotUsed] = Source.single(request).via(requestFlow)
+    } yield responseSource.flatMapConcat(handleResponse)
+
+    maybeStream match {
+      case Right(s) => s
+      case Left(e) => Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(e))
+    }
   }
 
   import io.circe.parser.decode
@@ -73,18 +82,20 @@ object TwitterStream {
       .map(decodeJson)
   }
 
-  def handleResponse(response: HttpResponse): Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], Any]] = {
+  def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     response.status match {
       case StatusCodes.OK =>
-        Right(toTweatStream(response.entity.withoutSizeLimit().dataBytes))
+        toTweatStream(response.entity.withoutSizeLimit().dataBytes)
 
       case status =>
-        Left(HttpError(s"Received a bad status code: $status"))
+        Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(HttpError(s"Received a bad status code: $status")))
     }
   }
 
-  def getAuthorizationHeader(consumerKey: String, consumerSecret: String, accessToken: String, accessTokenSecret: String): Future[String] =
-    consumer.createOauthenticatedRequest(
+  import scala.concurrent.duration.DurationInt
+
+  def getAuthorizationHeader(consumerKey: String, consumerSecret: String, accessToken: String, accessTokenSecret: String): String = {
+    val authHeaderF = consumer.createOauthenticatedRequest(
       KoauthRequest(
         method = "GET",
         url = statsSampleUrl,
@@ -96,6 +107,9 @@ object TwitterStream {
       accessToken,
       accessTokenSecret
     ).map(_.header)
+
+    Await.result(authHeaderF, 10 minutes)
+  }
 
   def createHeaders(authHeaderValue: String): immutable.Seq[HttpHeader] = {
     immutable.Seq(
