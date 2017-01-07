@@ -66,7 +66,7 @@ object TwitterStream {
       case Right(s) => s
       case Left(e) => Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(e))
     }
-  }.async
+  }
 
   import io.circe.parser.decode
   implicit val tweetDecoder: Decoder[Tweet] = deriveDecoder[Tweet]
