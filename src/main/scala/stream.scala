@@ -20,6 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 
 object TwitterStream {
+
   implicit val actorSystem = ActorSystem()
   implicit val materializer = ActorMaterializer(
     materializerSettings =
@@ -27,6 +28,10 @@ object TwitterStream {
         .withSupervisionStrategy(Supervision.resumingDecider: Supervision.Decider)
   )
   implicit val httpExt = Http()
+
+  def shutdown(): Unit = {
+    actorSystem.terminate()
+  }
   val consumer = new DefaultConsumerService(scala.concurrent.ExecutionContext.global)
 
   def getEnvVar(envVarName: String) = scala.sys.env.get(envVarName)
@@ -42,10 +47,10 @@ object TwitterStream {
 
   val statsSampleUrl = "https://stream.twitter.com/1.1/statuses/sample.json?stall_warnings=true"
 
-  val requestFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+  lazy val requestFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
     httpExt.outgoingConnectionHttps("stream.twitter.com")
 
-  def twitterStream: Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed] = {
+  lazy val twitterStream: Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed] = {
     val maybeStream: Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed]] = for {
       consumerKey <- maybeConsumerKey
       consumerSecret <- maybeConsumerSecret
@@ -61,7 +66,7 @@ object TwitterStream {
       case Right(s) => s
       case Left(e) => Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(e))
     }
-  }
+  }.async
 
   import io.circe.parser.decode
   implicit val tweetDecoder: Decoder[Tweet] = deriveDecoder[Tweet]

@@ -19,4 +19,5 @@ object Application extends App {
   println("awaiting stream termination")
   Await.result(streamFinishedF, Duration.Inf)
   System.err.println("stream terminated")
+  TwitterStream.shutdown()
 }
