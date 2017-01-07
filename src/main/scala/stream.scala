@@ -76,7 +76,7 @@ object TwitterStream {
       .toEither
   }
 
-  def toTweatStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
+  def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
       .filter(_.contains("\r\n"))
       .map(decodeJson)
@@ -85,7 +85,7 @@ object TwitterStream {
   def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     response.status match {
       case StatusCodes.OK =>
-        toTweatStream(response.entity.withoutSizeLimit().dataBytes)
+        convertBytesToTweetStream(response.entity.withoutSizeLimit().dataBytes)
 
       case status =>
         Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(HttpError(s"Received a bad status code: $status")))
