@@ -24,8 +24,8 @@ final case class Status(id: Long)
 final case class Delete(status: Status)
 final case class DeletedTweet(delete: Delete) extends TwitterStatusApiModel
 
-
-final case class Warning(code: String, message: String, percent_full: Int) extends TwitterStatusApiModel
+final case class Warning(code: String, message: String, percent_full: Int)
+final case class StreamWarning(warning: Warning) extends TwitterStatusApiModel
 
 
 object Tweet {
@@ -95,7 +95,7 @@ object Statistics {
   }
 
   val top10 = top(10)(_)
-  val top10000 = top(10000)(_)
+  val top1000 = top(1000)(_)
 
   lazy val showCounts = new Show[Map[String, Int]] {
     def show(counts: Map[String, Int]): String = {
@@ -170,12 +170,12 @@ object Statistics {
           startTime = Tweet.minTime(x.startTime, y.startTime),
           endTime = Tweet.maxTime(x.endTime, y.endTime),
           count = x.count + y.count,
-          emojis = top10000(Tweet.mergeCounts(x.emojis, y.emojis)),
+          emojis = top1000(Tweet.mergeCounts(x.emojis, y.emojis)),
           emojiCount = x.emojiCount + y.emojiCount,
-          hashTags = top10000(Tweet.mergeCounts(x.hashTags, y.hashTags)),
+          hashTags = top1000(Tweet.mergeCounts(x.hashTags, y.hashTags)),
           urlCount = x.urlCount + y.urlCount,
           photoUrlCount = x.photoUrlCount + y.photoUrlCount,
-          domains = top10000(Tweet.mergeCounts(x.domains, y.domains))
+          domains = top1000(Tweet.mergeCounts(x.domains, y.domains))
         )
     }
   }

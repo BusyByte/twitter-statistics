@@ -70,6 +70,7 @@ object TwitterStream {
 
   import io.circe.parser.decode
   implicit val warningDecoder: Decoder[Warning] = deriveDecoder[Warning]
+  implicit val streamWarningDecoder: Decoder[StreamWarning] = deriveDecoder[StreamWarning]
   implicit val mediaDecoder: Decoder[Media] = deriveDecoder[Media]
   implicit val urlDecoder: Decoder[Url] = deriveDecoder[Url]
   implicit val hashTagDecoder: Decoder[HashTag] = deriveDecoder[HashTag]
@@ -80,7 +81,7 @@ object TwitterStream {
   implicit val deletedTweetDecoder: Decoder[DeletedTweet] = deriveDecoder[DeletedTweet]
   import io.circe._, io.circe.parser._
   def decodeJson(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
-      decode[DeletedTweet](json).orElse(decode[Warning](json)).orElse(decode[Tweet](json))
+      decode[DeletedTweet](json).orElse(decode[StreamWarning](json)).orElse(decode[Tweet](json))
       .leftMap{e =>
         val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
         TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )
@@ -88,10 +89,12 @@ object TwitterStream {
       .toEither
   }
 
+  val stringFlow = Flow[String].map(decodeJson).async
+
   def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
       .filter(_.contains("\r\n")).async
-      .map(decodeJson).async
+      .via(balancer(stringFlow, 3))
   }
 
   def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {

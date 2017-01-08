@@ -21,6 +21,9 @@ object Application extends App {
   val apiToTweetStream = Flow[Either[ApplicationError, TwitterStatusApiModel]]
     .filter {
       case Right(_: Tweet) => true
+      case Right(StreamWarning(warning)) =>
+        logger.warn("Warning: " + warning)
+        false
       case Left(error) =>
         logger.error("Error: " + error.message)
         false
