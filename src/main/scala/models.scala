@@ -132,19 +132,42 @@ object Statistics {
   object Implicits {
 
     implicit lazy val showStatistic = new Show[Statistics] {
-      def show(stats: Statistics): String =
+      def show(stats: Statistics): String = {
+        val maybeTweetRate = for {
+          start <- stats.startTime
+          end <- stats.endTime
+        } yield {
+          val elapsedMillis = end - start
+          val elapsedSeconds = elapsedMillis / 1000
+          val numTweets = stats.count
+          val tweetsPerSecond = numTweets / math.max(elapsedSeconds, 1)
+          val tweetsPerMinute = tweetsPerSecond * 60
+          val tweetsPerHour =   tweetsPerMinute * 60
+          (tweetsPerSecond, tweetsPerMinute, tweetsPerHour)
+        }
+
+        val tweetsPerSec = maybeTweetRate.map(_._1).getOrElse("")
+        val tweetsPerMin = maybeTweetRate.map(_._2).getOrElse("")
+        val tweetsPerHour = maybeTweetRate.map(_._3) .getOrElse("")
+
         s"""
-          |startTime=${stats.startTime.getOrElse("")}
-          |endTime=${stats.endTime.getOrElse("")}
-          |count=${stats.count}
-          |Top 10 emojis=${showCounts.show(top10(stats.emojis))}
-          |emojiCount=${stats.emojiCount}
-          |Top 10 hashTags=${showCounts.show(top10(stats.hashTags))}
-          |urlCount=${stats.urlCount}
-          |photoUrlCount=${stats.photoUrlCount}
-          |Top 10 domains=${showCounts.show(top10(stats.domains))}
+          |Tweets/sec      = $tweetsPerSec
+          |Tweets/min      = $tweetsPerMin
+          |Tweets/hour     = $tweetsPerHour
+          |Tweet Count     = ${stats.count}
+          |Top 10 Emojis: ${showCounts.show(top10(stats.emojis))}
+          |Emoji Count     = ${stats.emojiCount}
+          |Top 10 Hash Tags: ${showCounts.show(top10(stats.hashTags))}
+          |URL Count       = ${stats.urlCount}
+          |Photo URL Count = ${stats.photoUrlCount}
+          |Top 10 domains: ${showCounts.show(top10(stats.domains))}
+          |Start Time      = ${stats.startTime.getOrElse("")}
+          |End Time        = ${stats.endTime.getOrElse("")}
           |
         """.stripMargin
+      }
+
+
     }
 
     implicit lazy val tweetToStats = new Conversion[Tweet, Statistics] {
