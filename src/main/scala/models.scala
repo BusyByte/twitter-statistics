@@ -5,6 +5,7 @@ import java.text.{ParsePosition, SimpleDateFormat}
 
 import cats.Show
 import cats.kernel.Monoid
+import net.nomadicalien.twitter.service.TweetService
 
 
 case class Emoji(short_name: String, text: Option[String])
@@ -30,11 +31,24 @@ final case class StreamWarning(warning: Warning) extends TwitterStatusApiModel
 
 
 object Tweet {
+
+  def decodeTwitterStatusApiModel(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
+    import net.nomadicalien.twitter.json.JsonDecoders._
+    import io.circe.parser.decode
+    import io.circe._, io.circe.parser._
+    decode[DeletedTweet](json).orElse(decode[StreamWarning](json)).orElse(decode[Tweet](json))
+      .leftMap{e =>
+        val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
+        TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )
+      }
+      .toEither
+  }
+
   def findTweetTime(tweet: Tweet): Long =
     new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy")
       .parse(tweet.created_at, new ParsePosition(0))
       .getTime
-  def findEmojis(tweet: Tweet): Map[String, Int] = Map.empty[String, Int]
+
   def findHashTags(tweet: Tweet): Map[String, Int] = {
     tweet.entities.hashtags.map(_.text.toLowerCase)
       .foldLeft(Map.empty[String, Int]) {
@@ -64,7 +78,7 @@ object Tweet {
     } yield math.max(leftValue, rightValue)
 }
 trait Conversion[A, B] {
-  def convert(a: A): B
+  def convert(a: A): Either[ApplicationError, B]
 }
 
 
@@ -91,6 +105,8 @@ final case class Statistics(
 )
 
 object Statistics {
+  lazy val tweetService: TweetService = TweetService
+
   def top(n: Int)(counts: Map[String, Int]): Map[String, Int] = {
     counts.toList.sortBy(-_._2).take(n).toMap
   }
@@ -126,23 +142,26 @@ object Statistics {
     }
 
     implicit lazy val tweetToStats = new Conversion[Tweet, Statistics] {
-      def convert(tweet: Tweet): Statistics = {
-        val currentTime = Tweet.findTweetTime(tweet)
-        val emojis = Tweet.findEmojis(tweet)
-        val emojiCount = emojis.values.foldLeft(0)(_ + _)
-        val hashTags = Tweet.findHashTags(tweet)
-        val urls = tweet.entities.urls.flatMap(_.expanded_url.toList)
-        val photos = tweet.entities.media.toList.flatten.filter {_.`type` == "photo"}
-        val domains = urls
-          .map(Tweet.extractDomain)
-          .map(_.toLowerCase)
-          .groupBy(dom => dom)
-          .map(p => (p._1, p._2.size))
-        Statistics(
+      import cats.implicits._
+      def convert(tweet: Tweet):Either[ApplicationError, Statistics] = {
+        for {
+          emojisCountMap <- tweetService.findEmojisCount(tweet)
+        } yield {
+          val currentTime = Tweet.findTweetTime(tweet)
+          val emojiCount = emojisCountMap.values.sum
+          val hashTags = Tweet.findHashTags(tweet)
+          val urls = tweet.entities.urls.flatMap(_.expanded_url.toList)
+          val photos = tweet.entities.media.toList.flatten.filter {_.`type` == "photo"}
+          val domains = urls
+            .map(Tweet.extractDomain)
+            .map(_.toLowerCase)
+            .groupBy(dom => dom)
+            .map(p => (p._1, p._2.size))
+          Statistics(
           startTime = Some(currentTime),
           endTime = Some(currentTime),
           count = 1,
-          emojis = emojis,
+          emojis = emojisCountMap,
           emojiCount = emojiCount,
           hashTags = hashTags,
           urlCount = urls.size,
@@ -151,6 +170,7 @@ object Statistics {
         )
       }
     }
+  }
     implicit lazy val statisticsMonoid = new Monoid[Statistics] {
       def empty: Statistics = {
         Statistics(

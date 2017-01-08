@@ -21,11 +21,9 @@ private[service] trait TweetServiceInterpreter extends TweetService {
       textEmojis.foldLeft(Map.empty[String, Int]) {
         case (emojiMap, emoji) =>
           val shortName = emoji.short_name
-          val existingCount = emojiMap.getOrElse(shortName, 0)
-          val currentCount = emoji.text.map(findEmojiCount(tweetText, _)).getOrElse(0)
-          val totalCount = existingCount + currentCount
-          if(totalCount > 0)
-            emojiMap.updated(shortName, totalCount)
+          val emojiCount = emoji.text.map(findEmojiCount(tweetText, _)).getOrElse(0)
+          if(emojiCount > 0)
+            emojiMap.updated(shortName, emojiCount)
           else
             emojiMap
       }

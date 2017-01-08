@@ -32,6 +32,15 @@ object Application extends App {
     .collect {
       case Right(t: Tweet) => tweetToStats.convert(t)
     }
+    .filter {
+      case Right(t: Statistics) => true
+      case Left(error) =>
+        logger.error("Error: " + error.message)
+        false
+    }
+    .collect {
+      case Right(s : Statistics) => s
+    }
 
   val fiveSecondTreatStream = Flow[Statistics].groupedWithin(Int.MaxValue, 5.seconds)
     .map{ groupedStats: Seq[Statistics] =>

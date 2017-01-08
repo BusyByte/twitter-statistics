@@ -11,8 +11,6 @@ import akka.util.ByteString
 import cats.implicits._
 import com.hunorkovacs.koauth.domain.KoauthRequest
 import com.hunorkovacs.koauth.service.consumer.DefaultConsumerService
-import io.circe._
-import io.circe.generic.semiauto._
 import net.nomadicalien.twitter.models._
 
 import scala.collection.immutable
@@ -68,28 +66,7 @@ object TwitterStream {
     }
   }
 
-  import io.circe.parser.decode
-  implicit val warningDecoder: Decoder[Warning] = deriveDecoder[Warning]
-  implicit val streamWarningDecoder: Decoder[StreamWarning] = deriveDecoder[StreamWarning]
-  implicit val mediaDecoder: Decoder[Media] = deriveDecoder[Media]
-  implicit val urlDecoder: Decoder[Url] = deriveDecoder[Url]
-  implicit val hashTagDecoder: Decoder[HashTag] = deriveDecoder[HashTag]
-  implicit val entititesDecoder: Decoder[Entities] = deriveDecoder[Entities]
-  implicit val tweetDecoder: Decoder[Tweet] = deriveDecoder[Tweet]
-  implicit val statusDecoder: Decoder[Status] = deriveDecoder[Status]
-  implicit val deleteDecoder: Decoder[Delete] = deriveDecoder[Delete]
-  implicit val deletedTweetDecoder: Decoder[DeletedTweet] = deriveDecoder[DeletedTweet]
-  import io.circe._, io.circe.parser._
-  def decodeJson(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
-      decode[DeletedTweet](json).orElse(decode[StreamWarning](json)).orElse(decode[Tweet](json))
-      .leftMap{e =>
-        val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
-        TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )
-      }
-      .toEither
-  }
-
-  val stringFlow = Flow[String].map(decodeJson).async
+  val stringFlow = Flow[String].map(Tweet.decodeTwitterStatusApiModel).async
 
   def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)

@@ -1,5 +1,6 @@
 package net.nomadicalien.twitter.repository
 
+import net.nomadicalien.twitter.json.JsonDecoders
 import net.nomadicalien.twitter.models._
 
 import scala.io.Source
@@ -9,12 +10,9 @@ trait EmojiRepository {
   def textBasedEmojis: Either[ApplicationError, List[Emoji]]
 }
 
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser.decode
 import cats.implicits._
-private[repository] trait ClassPathEmojiRepository extends EmojiRepository {
-  implicit val warningDecoder: Decoder[Emoji] = deriveDecoder[Emoji]
+private[repository] trait ClassPathEmojiRepository extends EmojiRepository with JsonDecoders {
 
   def emojiSource: Either[ApplicationError, Source] = {
     val source = Try {
