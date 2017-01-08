@@ -5,8 +5,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.stream.scaladsl.{Flow, Source}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.scaladsl.{Balance, Flow, GraphDSL, Merge, Source}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, FlowShape, Supervision}
 import akka.util.ByteString
 import cats.implicits._
 import com.hunorkovacs.koauth.domain.KoauthRequest
@@ -69,22 +69,29 @@ object TwitterStream {
   }
 
   import io.circe.parser.decode
+  implicit val warningDecoder: Decoder[Warning] = deriveDecoder[Warning]
+  implicit val mediaDecoder: Decoder[Media] = deriveDecoder[Media]
+  implicit val urlDecoder: Decoder[Url] = deriveDecoder[Url]
+  implicit val hashTagDecoder: Decoder[HashTag] = deriveDecoder[HashTag]
+  implicit val entititesDecoder: Decoder[Entities] = deriveDecoder[Entities]
   implicit val tweetDecoder: Decoder[Tweet] = deriveDecoder[Tweet]
   implicit val statusDecoder: Decoder[Status] = deriveDecoder[Status]
   implicit val deleteDecoder: Decoder[Delete] = deriveDecoder[Delete]
   implicit val deletedTweetDecoder: Decoder[DeletedTweet] = deriveDecoder[DeletedTweet]
-
+  import io.circe._, io.circe.parser._
   def decodeJson(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
-    decode[Tweet](json)
-      .orElse(decode[DeletedTweet](json))
-      .leftMap(_ => TweetParseError(s"Error parsing json:\n$json\n" ))
+      decode[DeletedTweet](json).orElse(decode[Warning](json)).orElse(decode[Tweet](json))
+      .leftMap{e =>
+        val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
+        TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )
+      }
       .toEither
   }
 
   def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
       .filter(_.contains("\r\n")).async
-      .map(decodeJson)
+      .map(decodeJson).async
   }
 
   def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
@@ -129,6 +136,23 @@ object TwitterStream {
       uri = Uri(statsSampleUrl),
       headers = headers
     )
+  }
+
+  def balancer[In, Out](worker: Flow[In, Out, Any], workerCount: Int): Flow[In, Out, NotUsed] = {
+    import akka.stream.scaladsl.GraphDSL.Implicits._
+
+    Flow.fromGraph(GraphDSL.create() { implicit b =>
+      val balancer = b.add(Balance[In](workerCount, waitForAllDownstreams = true))
+      val merge = b.add(Merge[Out](workerCount))
+
+      for (_ <- 1 to workerCount) {
+        // for each worker, add an edge from the balancer to the worker, then wire
+        // it to the merge element
+        balancer ~> worker.async ~> merge
+      }
+
+      FlowShape(balancer.in, merge.out)
+    })
   }
 
 }
