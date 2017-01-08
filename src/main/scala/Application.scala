@@ -1,6 +1,5 @@
 package net.nomadicalien.twitter
 
-import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink}
 import net.nomadicalien.twitter.models._
 import net.nomadicalien.twitter.stream.TwitterStream
@@ -47,7 +46,7 @@ object Application extends App {
       val results = groupedStats.foldLeft(statisticsMonoid.empty)(statisticsMonoid.combine)
       logger.info(s"Current 5 second tweet count ${showStatistic.show(results)}")
       results
-    }.async
+    }
 
   def groupAndFold(groupSize: Int, context: String) =
     Flow[Statistics]
@@ -56,24 +55,24 @@ object Application extends App {
         val results = groupedStats.foldLeft(statisticsMonoid.empty)(statisticsMonoid.combine)
         logger.info(s"Current $context tweet count ${showStatistic.show(results)}")
         results
-      }.async
+      }
 
   val fifteenSecondTweetStream = groupAndFold(3, "15 second")
   val oneMinuteTweetStream = groupAndFold(4, "1 minute")
   val fifteenMinuteTweetStream = groupAndFold(15, "15 minute")
   val oneHourTweetStream = groupAndFold(4, "1 hour")
-  val fourHourTweetStream = groupAndFold(4, "1 hour")
+  val fourHourTweetStream = groupAndFold(4, "4 hour")
   val twentyFourHourTweetStream = groupAndFold(6, "24 hour")
 
   val streamFinishedF = TwitterStream.twitterStream
-    .via(apiToTweetStream)
-    .via(fiveSecondTreatStream)
-    .via(fifteenSecondTweetStream)
-    .via(oneMinuteTweetStream)
-    .via(fifteenMinuteTweetStream)
-    .via(oneHourTweetStream)
-    .via(fourHourTweetStream)
-    .via(twentyFourHourTweetStream)
+    .via(TwitterStream.balancer(apiToTweetStream, 3))
+    .via(fiveSecondTreatStream.async)
+    .via(fifteenSecondTweetStream.async)
+    .via(oneMinuteTweetStream.async)
+    .via(fifteenMinuteTweetStream.async)
+    .via(oneHourTweetStream.async)
+    .via(fourHourTweetStream.async)
+    .via(twentyFourHourTweetStream.async)
     .runWith(Sink.ignore)
 
   logger.info("awaiting stream termination")

@@ -44,8 +44,14 @@ object Tweet {
       .toEither
   }
 
+  val simpleDateFormatHolder = new ThreadLocal[SimpleDateFormat] {
+    override def initialValue(): SimpleDateFormat = {
+      new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy")
+    }
+  }
+
   def findTweetTime(tweet: Tweet): Long =
-    new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy")
+    simpleDateFormatHolder.get()
       .parse(tweet.created_at, new ParsePosition(0))
       .getTime
 

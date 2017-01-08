@@ -66,12 +66,12 @@ object TwitterStream {
     }
   }
 
-  val stringFlow = Flow[String].map(Tweet.decodeTwitterStatusApiModel).async
+  val stringFlow = Flow[String].map(Tweet.decodeTwitterStatusApiModel)
 
   def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
       .filter(_.contains("\r\n")).async
-      .via(balancer(stringFlow, 3))
+      .via(balancer(stringFlow, 8))
   }
 
   def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
@@ -122,7 +122,7 @@ object TwitterStream {
     import akka.stream.scaladsl.GraphDSL.Implicits._
 
     Flow.fromGraph(GraphDSL.create() { implicit b =>
-      val balancer = b.add(Balance[In](workerCount, waitForAllDownstreams = true))
+      val balancer = b.add(Balance[In](workerCount, waitForAllDownstreams = false))
       val merge = b.add(Merge[Out](workerCount))
 
       for (_ <- 1 to workerCount) {
