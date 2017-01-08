@@ -79,4 +79,5 @@ object Application extends App {
   Await.result(streamFinishedF, Duration.Inf)
   logger.error("stream terminated")
   TwitterStream.shutdown()
+  LogManager.shutdown()
 }
