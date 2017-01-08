@@ -3,10 +3,11 @@ package net.nomadicalien.twitter.models
 import java.net.URL
 import java.text.{ParsePosition, SimpleDateFormat}
 
-import akka.io.Tcp.Message
 import cats.Show
 import cats.kernel.Monoid
 
+
+case class Emoji(short_name: String, text: Option[String])
 
 sealed trait TwitterStatusApiModel
 
@@ -188,3 +189,5 @@ sealed trait ApplicationError {
 case class MissingConfigError(message: String) extends ApplicationError
 case class HttpError(message: String) extends ApplicationError
 case class TweetParseError(message: String) extends ApplicationError
+case class EmojiParseError(message: String) extends ApplicationError
+case class IOError(message: String) extends ApplicationError
