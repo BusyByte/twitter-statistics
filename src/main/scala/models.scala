@@ -36,7 +36,7 @@ object Tweet {
     import net.nomadicalien.twitter.json.JsonDecoders._
     import io.circe.parser.decode
     import io.circe._, io.circe.parser._
-    decode[DeletedTweet](json).orElse(decode[StreamWarning](json)).orElse(decode[Tweet](json))
+    decode[TwitterStatusApiModel](json)
       .leftMap{e =>
         val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
         TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )
