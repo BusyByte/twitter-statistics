@@ -155,11 +155,11 @@ object Statistics {
           |Tweets/min      = $tweetsPerMin
           |Tweets/hour     = $tweetsPerHour
           |Tweet Count     = ${stats.count}
-          |Top 10 Emojis: ${showCounts.show(top10(stats.emojis))}
           |Emoji Count     = ${stats.emojiCount}
+          |Top 10 Emojis: ${showCounts.show(top10(stats.emojis))}
           |Top 10 Hash Tags: ${showCounts.show(top10(stats.hashTags))}
-          |URL Count       = ${stats.urlCount}
           |Photo URL Count = ${stats.photoUrlCount}
+          |URL Count       = ${stats.urlCount}
           |Top 10 domains: ${showCounts.show(top10(stats.domains))}
           |Start Time      = ${stats.startTime.getOrElse("")}
           |End Time        = ${stats.endTime.getOrElse("")}
