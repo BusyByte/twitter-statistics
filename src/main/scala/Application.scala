@@ -48,21 +48,23 @@ object Application extends App {
       results
     }
 
-  def groupAndFold(groupSize: Int, context: String) =
+  def groupAndFold(groupSize: Int, context: String, logStats: Boolean) =
     Flow[Statistics]
       .grouped(groupSize)
       .map { groupedStats =>
         val results = groupedStats.foldLeft(statisticsMonoid.empty)(statisticsMonoid.combine)
-        logger.info(s"Current $context tweet count ${showStatistic.show(results)}")
+        if(logStats) {
+          logger.info(s"Current $context tweet count ${showStatistic.show(results)}")
+        }
         results
       }
 
-  val fifteenSecondTweetStream = groupAndFold(3, "15 second")
-  val oneMinuteTweetStream = groupAndFold(4, "1 minute")
-  val fifteenMinuteTweetStream = groupAndFold(15, "15 minute")
-  val oneHourTweetStream = groupAndFold(4, "1 hour")
-  val fourHourTweetStream = groupAndFold(4, "4 hour")
-  val twentyFourHourTweetStream = groupAndFold(6, "24 hour")
+  val fifteenSecondTweetStream = groupAndFold(3, "15 second", false)
+  val oneMinuteTweetStream = groupAndFold(4, "1 minute", false)
+  val fifteenMinuteTweetStream = groupAndFold(15, "15 minute", true)
+  val oneHourTweetStream = groupAndFold(4, "1 hour", true)
+  val fourHourTweetStream = groupAndFold(4, "4 hour", true)
+  val twentyFourHourTweetStream = groupAndFold(6, "24 hour", true)
 
   val streamFinishedF = TwitterStream.twitterStream
     .via(TwitterStream.balancer(apiToTweetStream, 3))
