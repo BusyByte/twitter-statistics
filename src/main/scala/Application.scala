@@ -44,7 +44,7 @@ object Application extends App {
   val fiveSecondTreatStream = Flow[Statistics].groupedWithin(Int.MaxValue, 5.seconds)
     .map{ groupedStats: Seq[Statistics] =>
       val results = groupedStats.foldLeft(statisticsMonoid.empty)(statisticsMonoid.combine)
-      logger.info(s"Current 5 second tweet count ${showStatistic.show(results)}")
+      //logger.info(s"Current 5 second tweet count ${showStatistic.show(results)}")
       results
     }
 
