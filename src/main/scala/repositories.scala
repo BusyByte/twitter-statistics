@@ -24,6 +24,11 @@ private[repository] trait ClassPathEmojiRepository extends EmojiRepository with 
     }
   }
 
+  /*
+  TODO: need to pick one if same text so don't get duplicate counts:
+  670 - smile
+  670 - smiley
+   */
   def textBasedEmojis: Either[ApplicationError, List[Emoji]] = {
     for {
       emojisString <- readEmojiText()
