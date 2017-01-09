@@ -61,8 +61,10 @@ object Application extends App {
 
   val fifteenSecondTweetStream = groupAndFold(3, "15 second", false)
   val oneMinuteTweetStream = groupAndFold(4, "1 minute", false)
-  val fifteenMinuteTweetStream = groupAndFold(15, "15 minute", true)
-  val oneHourTweetStream = groupAndFold(4, "1 hour", true)
+  val fiveMinuteTweetStream = groupAndFold(5, "5 minute", true)
+  val tenMinuteTweetStream = groupAndFold(2, "10 minute", true)
+  val twentyMinuteTweetStream = groupAndFold(2, "20 minute", true)
+  val oneHourTweetStream = groupAndFold(3, "1 hour", true)
   val fourHourTweetStream = groupAndFold(4, "4 hour", true)
   val twentyFourHourTweetStream = groupAndFold(6, "24 hour", true)
 
@@ -71,7 +73,9 @@ object Application extends App {
     .via(fiveSecondTreatStream.async)
     .via(fifteenSecondTweetStream.async)
     .via(oneMinuteTweetStream.async)
-    .via(fifteenMinuteTweetStream.async)
+    .via(fiveMinuteTweetStream.async)
+    .via(tenMinuteTweetStream.async)
+    .via(twentyMinuteTweetStream.async)
     .via(oneHourTweetStream.async)
     .via(fourHourTweetStream.async)
     .via(twentyFourHourTweetStream.async)
