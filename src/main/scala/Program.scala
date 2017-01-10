@@ -85,8 +85,9 @@ trait Program extends StreamUtils with StreamLoggingHelper {
     val resultStatistics: Future[Statistics] = graph.run()
 
     logger.info("awaiting stream termination")
-    Await.result(resultStatistics, Duration.Inf)
+    val resultingStats: Statistics = Await.result(resultStatistics, Duration.Inf)
     logger.error("stream terminated")
+    logger.info(s"Resulting stats ${showStatistic.show(resultingStats)}")
   }
 }
 
