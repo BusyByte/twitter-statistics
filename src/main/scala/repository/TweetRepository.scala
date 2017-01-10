@@ -20,7 +20,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 trait TweetRepository {
-  def tweetSampleStream: Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed]
+  def tweetSampleStream: Source[Either[ApplicationError, TweetStatus], NotUsed]
 }
 
 private[repository] trait TweetRepositoryInterpreter extends TweetRepository with StreamUtils {
@@ -34,8 +34,8 @@ private[repository] trait TweetRepositoryInterpreter extends TweetRepository wit
     httpExt.outgoingConnectionHttps("stream.twitter.com")
 
 
-  def tweetSampleStream: Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed] = {
-    val maybeStream: Either[ApplicationError, Source[Either[ApplicationError, TwitterStatusApiModel], NotUsed]] = for {
+  def tweetSampleStream: Source[Either[ApplicationError, TweetStatus], NotUsed] = {
+    val maybeStream: Either[ApplicationError, Source[Either[ApplicationError, TweetStatus], NotUsed]] = for {
       consumerKey <- config.maybeConsumerKey
       consumerSecret <- config.maybeConsumerSecret
       accessToken <- config.maybeAccessToken
@@ -48,25 +48,25 @@ private[repository] trait TweetRepositoryInterpreter extends TweetRepository wit
 
     maybeStream match {
       case Right(s) => s
-      case Left(e) => Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(e))
+      case Left(e) => Source.single[Either[ApplicationError, TweetStatus]](Left(e))
     }
   }
 
   def stringFlow = Flow[String].map(Tweet.decodeTwitterStatusApiModel)
 
-  def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
+  def convertBytesToTweetStream(dataBytes: Source[ByteString, Any]): Source[Either[ApplicationError, TweetStatus], Any] = {
     dataBytes.scan("")((acc, curr) => if (acc.contains("\r\n")) curr.utf8String else acc + curr.utf8String)
       .filter(_.contains("\r\n")).async
       .via(balancer(stringFlow, 8))
   }
 
-  def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TwitterStatusApiModel], Any] = {
+  def handleResponse(response: HttpResponse): Source[Either[ApplicationError, TweetStatus], Any] = {
     response.status match {
       case StatusCodes.OK =>
         convertBytesToTweetStream(response.entity.withoutSizeLimit().dataBytes)
 
       case status =>
-        Source.single[Either[ApplicationError, TwitterStatusApiModel]](Left(HttpError(s"Received a bad status code: $status")))
+        Source.single[Either[ApplicationError, TweetStatus]](Left(HttpError(s"Received a bad status code: $status")))
     }
   }
 

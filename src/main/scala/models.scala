@@ -10,7 +10,7 @@ import net.nomadicalien.twitter.service.TweetService
 
 case class Emoji(short_name: String, text: Option[String])
 
-sealed trait TwitterStatusApiModel
+sealed trait TweetStatus
 
 final case class HashTag(text: String)
 final case class Url(expanded_url: Option[String])
@@ -20,23 +20,23 @@ final case class Entities(
   urls: List[Url],
   media: Option[List[Media]]
 )
-final case class Tweet(created_at: String, entities: Entities, text: String) extends TwitterStatusApiModel
+final case class Tweet(created_at: String, entities: Entities, text: String) extends TweetStatus
 
 final case class Status(id: Long)
 final case class Delete(status: Status)
-final case class DeletedTweet(delete: Delete) extends TwitterStatusApiModel
+final case class DeletedTweet(delete: Delete) extends TweetStatus
 
 final case class Warning(code: String, message: String, percent_full: Int)
-final case class StreamWarning(warning: Warning) extends TwitterStatusApiModel
+final case class StreamWarning(warning: Warning) extends TweetStatus
 
 
 object Tweet {
 
-  def decodeTwitterStatusApiModel(json: String): Either[ApplicationError, TwitterStatusApiModel] = {
+  def decodeTwitterStatusApiModel(json: String): Either[ApplicationError, TweetStatus] = {
     import net.nomadicalien.twitter.json.JsonDecoders._
     import io.circe.parser.decode
     import io.circe._, io.circe.parser._
-    decode[TwitterStatusApiModel](json)
+    decode[TweetStatus](json)
       .leftMap{e =>
         val prettyJson = parse(json).toOption.map(_.toString()).getOrElse("")
         TweetParseError(s"${e.getMessage}:Error parsing json:\n${prettyJson}\n" )

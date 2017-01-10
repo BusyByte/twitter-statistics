@@ -20,11 +20,11 @@ trait JsonDecoders {
   implicit val deletedTweetDecoder: Decoder[DeletedTweet] = deriveDecoder[DeletedTweet]
 
 
-  implicit val twitterStatusApiModelDecoder: Decoder[TwitterStatusApiModel] =
-    Decoder[Tweet].map[TwitterStatusApiModel](identity)
+  implicit val twitterStatusApiModelDecoder: Decoder[TweetStatus] =
+    Decoder[Tweet].map[TweetStatus](identity)
       .or(
-        Decoder[DeletedTweet].map[TwitterStatusApiModel](identity)
-            .or(Decoder[StreamWarning].map[TwitterStatusApiModel](identity))
+        Decoder[DeletedTweet].map[TweetStatus](identity)
+            .or(Decoder[StreamWarning].map[TweetStatus](identity))
 
       )
 
