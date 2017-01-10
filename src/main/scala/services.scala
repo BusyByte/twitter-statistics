@@ -16,7 +16,7 @@ private[service] trait TweetServiceInterpreter extends TweetService {
   def findEmojisCount(tweet: Tweet): Either[ApplicationError, Map[String, Int]] = {
     val tweetText = tweet.text
     for {
-      textEmojis <- emojiRepository.textBasedEmojis
+      textEmojis <- emojiRepository.getTextEmojis
     } yield {
       textEmojis.foldLeft(Map.empty[String, Int]) {
         case (emojiMap, emoji) =>

@@ -7,7 +7,7 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 trait EmojiRepository {
-  def textBasedEmojis: Either[ApplicationError, List[Emoji]]
+  def getTextEmojis: Either[ApplicationError, List[Emoji]]
 }
 
 import io.circe.parser.decode
@@ -16,7 +16,7 @@ private[repository] trait ClassPathEmojiRepository extends EmojiRepository with 
 
   def emojiSource: Either[ApplicationError, Source] = {
     val source = Try {
-     Source.fromInputStream(getClass.getResourceAsStream("/emoji_pretty.json"))
+      Source.fromInputStream(getClass.getResourceAsStream("/emoji_pretty.json"))
     }
     source match {
       case Success(s) => Right(s)
@@ -24,7 +24,7 @@ private[repository] trait ClassPathEmojiRepository extends EmojiRepository with 
     }
   }
 
-  def textBasedEmojis: Either[ApplicationError, List[Emoji]] = {
+  def getTextEmojis: Either[ApplicationError, List[Emoji]] = {
     for {
       emojisString <- readEmojiText()
       emojies <- parseEmojis(emojisString)
@@ -39,9 +39,9 @@ private[repository] trait ClassPathEmojiRepository extends EmojiRepository with 
   }
 
   def parseEmojis(emojisString: String): Either[ApplicationError, List[Emoji]] = {
-      decode[List[Emoji]](emojisString)
-        .leftMap(e => EmojiParseError(e.getMessage))
-        .toEither
+    decode[List[Emoji]](emojisString)
+      .leftMap(e => EmojiParseError(e.getMessage))
+      .toEither
   }
 
   def readEmojiText(): Either[ApplicationError, String] = {
@@ -60,6 +60,6 @@ private[repository] trait ClassPathEmojiRepository extends EmojiRepository with 
 }
 
 object ClassPathEmojiRepository extends ClassPathEmojiRepository {
-  override lazy val textBasedEmojis: Either[ApplicationError, List[Emoji]]
-    = super.textBasedEmojis
+  override lazy val getTextEmojis: Either[ApplicationError, List[Emoji]]
+  = super.getTextEmojis
 }
