@@ -23,3 +23,4 @@ twitter-statistics
 - test with specs
 - test with scalacheck
 - some more general cleanup and clarify
+- prety ascii tables
