@@ -19,6 +19,7 @@ twitter-statistics
 - cats - Show type class, implicits for flatMapping Either, Monoid
 
 ### TODO
+- report percents instead of counts
 - test with specs
 - test with scalacheck
 - some more general cleanup and clarify
