@@ -14,9 +14,9 @@ twitter-statistics
 ### Libraries Used
 - akka-http / akka-streams - connecting to and streaming tweets
 - circe - parsing json into models
-- koath - for authorizing oath 1a
-- log4j - use for asynchronous logging
-- cats - show type class, implicits for flatMapping Either, Monoid
+- koath - authorizing oath 1a
+- log4j - asynchronous logging
+- cats - Show type class, implicits for flatMapping Either, Monoid
 
 ### TODO
 - test with specs
