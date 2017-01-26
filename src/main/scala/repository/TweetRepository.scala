@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 import cats.implicits._
 import com.hunorkovacs.koauth.domain.KoauthRequest
-import com.hunorkovacs.koauth.service.consumer.{ConsumerService, DefaultConsumerService}
+import com.hunorkovacs.koauthsync.service.consumer.{ConsumerService, DefaultConsumerService}
 import net.nomadicalien.twitter.actor.ActorModule
 import net.nomadicalien.twitter.{Config, EnvVariableConfig}
 import net.nomadicalien.twitter.models._
@@ -71,7 +71,7 @@ private[repository] trait TweetRepositoryInterpreter extends TweetRepository wit
   }
 
   def getAuthorizationHeader(consumerKey: String, consumerSecret: String, accessToken: String, accessTokenSecret: String): String = {
-    val authHeaderF = consumerService.createOauthenticatedRequest(
+    consumerService.createOauthenticatedRequest(
       KoauthRequest(
         method = "GET",
         url = statsSampleUrl,
@@ -82,9 +82,7 @@ private[repository] trait TweetRepositoryInterpreter extends TweetRepository wit
       consumerSecret,
       accessToken,
       accessTokenSecret
-    ).map(_.header)
-
-    Await.result(authHeaderF, 10 minutes)
+    ).header
   }
 
   def createHeaders(authHeaderValue: String): immutable.Seq[HttpHeader] = {

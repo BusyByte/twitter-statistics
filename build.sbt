@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.5.0",
   "io.circe" %% "circe-generic" % "0.5.0",
   "io.circe" %% "circe-parser" % "0.5.0",
-  "com.hunorkovacs" %% "koauth" % "1.1.0",
+  "com.hunorkovacs" %% "koauth-sync" % "1.1.0",
   "org.apache.logging.log4j" % "log4j-api" % "2.7",
   "org.apache.logging.log4j" % "log4j-core" % "2.7",
   "com.lmax" % "disruptor" % "3.3.6"
